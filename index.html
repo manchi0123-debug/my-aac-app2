@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>特教 AAC 溝通板</title>
+  <style>
+    :root {
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --accent-blue: #2563eb;
+      --accent-orange: #ea580c;
+      --border-color: #fed7aa;
+      --border-active: #f97316;
+      --text-main: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* 頂部語句條與操作按鈕 */
+    .sentence-container {
+      display: flex;
+      gap: 10px;
+      background: #ffffff;
+      padding: 10px 14px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      min-height: 84px;
+      align-items: center;
+    }
+
+    .sentence-strip {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px;
+      min-height: 60px;
+      align-items: center;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .sentence-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s active, opacity 0.2s;
+    }
+
+    .action-btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-speak { background-color: var(--accent-blue); color: white; }
+    .btn-delete { background-color: #ef4444; color: white; }
+    .btn-clear { background-color: #64748b; color: white; }
+    .btn-setting { background-color: #475569; color: white; }
+
+    /* 快速核心語詞列 */
+    .quick-core-bar {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      flex-shrink: 0;
+    }
+
+    .core-chip {
+      background: #e0e7ff;
+      border: 2px solid #818cf8;
+      border-radius: 24px;
+      padding: 8px 18px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: #312e81;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* 分類標籤頁籤 */
+    .category-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+
+    .category-tab {
+      background: none;
+      border: none;
+      padding: 8px 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .category-tab.active {
+      background: #fed7aa;
+      color: #9a3412;
+    }
+
+    /* 詞彙卡片網格 */
+    .vocab-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      grid-auto-rows: minmax(110px, 1fr);
+      gap: 12px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    /* AAC 詞彙卡片樣式 */
+    .card {
+      background: var(--card-bg);
+      border: 3px solid var(--border-color);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: all 0.15s ease;
+    }
+
+    .card:active {
+      transform: scale(0.96);
+      border-color: var(--border-active);
+      background-color: #fff7ed;
+    }
+
+    .card .icon {
+      font-size: 2.7rem;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .card .label {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: var(--text-main);
+      text-align: center;
+    }
+
+    /* 語句條內的微型卡片 */
+    .mini-card {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      animation: popIn 0.15s ease-out;
+    }
+
+    .mini-card .mini-icon {
+      font-size: 1.3rem;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* 編輯管理模式浮動提示/按鈕 */
+    .card-remove-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .edit-mode .card-remove-badge {
+      display: flex;
+    }
+
+    .add-card-placeholder {
+      border: 3px dashed #cbd5e1;
+      background: #f8fafc;
+      color: #94a3b8;
+      display: none;
+    }
+
+    .edit-mode .add-card-placeholder {
+      display: flex;
+    }
+
+    /* 彈出視窗 Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-body {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-body input {
+      padding: 10px;
+      font-size: 1.1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 頂部語句條 -->
+  <div class="sentence-container">
+    <div id="sentenceStrip" class="sentence-strip"></div>
+    <div class="sentence-actions">
+      <button id="btnSpeak" class="action-btn btn-speak">🔊 說出來</button>
+      <button id="btnDelete" class="action-btn btn-delete">⌫ 刪一個</button>
+      <button id="btnClear" class="action-btn btn-clear">清除</button>
+      <button id="btnToggleEdit" class="action-btn btn-setting">⚙️ 管理</button>
+    </div>
+  </div>
+
+  <!-- 2. 快速核心語詞 -->
+  <div id="quickCoreBar" class="quick-core-bar"></div>
+
+  <!-- 3. 分類標籤列 -->
+  <div id="categoryBar" class="category-bar"></div>
+
+  <!-- 4. 詞彙網格區 -->
+  <div id="vocabGrid" class="vocab-grid"></div>
+
+  <!-- 自訂新增卡片 Modal -->
+  <div id="addModal" class="modal-overlay">
+    <div class="modal-body">
+      <h3>新增詞彙卡片</h3>
+      <input type="text" id="inputEmoji" placeholder="圖示 Emoji (例: 🧃)" maxlength="4">
+      <input type="text" id="inputText" placeholder="詞彙名稱 (例: 芭樂汁)">
+      <div style="display:flex; justify-content: flex-end; gap: 8px;">
+        <button id="modalCancel" class="action-btn" style="background:#cbd5e1;">取消</button>
+        <button id="modalConfirm" class="action-btn btn-speak">確定新增</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 預設資料庫結構
+    const DEFAULT_DATA = {
+      core: [
+        { text: "我要", icon: "✋" },
+        { text: "不要", icon: "🙅" },
+        { text: "還要", icon: "➕" },
+        { text: "好", icon: "👍" },
+        { text: "不好", icon: "👎" },
+        { text: "幫忙", icon: "🆘" },
+        { text: "去", icon: "🏃" },
+        { text: "看", icon: "👀" }
+      ],
+      categories: [
+        {
+          id: "eat",
+          name: "吃喝",
+          icon: "🍚",
+          cards: [
+            { text: "飯", icon: "🍚" },
+            { text: "麵", icon: "🍜" },
+            { text: "麵包", icon: "🍞" },
+            { text: "水", icon: "🚰" },
+            { text: "牛奶", icon: "🥛" },
+            { text: "果汁", icon: "🧃" },
+            { text: "水果", icon: "🍎" },
+            { text: "香蕉", icon: "🍌" },
+            { text: "餅乾", icon: "🍪" },
+            { text: "肉", icon: "🍗" },
+            { text: "蛋", icon: "🥚" },
+            { text: "蔬菜", icon: "🥦" }
+          ]
+        },
+        {
+          id: "feeling",
+          name: "感覺",
+          icon: "😊",
+          cards: [
+            { text: "高興", icon: "😄" },
+            { text: "難過", icon: "😢" },
+            { text: "生氣", icon: "😡" },
+            { text: "害怕", icon: "😨" },
+            { text: "累了", icon: "🥱" },
+            { text: "痛", icon: "🩹" },
+            { text: "飽了", icon: "😋" },
+            { text: "餓了", icon: "🤤" }
+          ]
+        },
+        {
+          id: "school",
+          name: "學校/生活",
+          icon: "🏫",
+          cards: [
+            { text: "上廁所", icon: "🚻" },
+            { text: "教室", icon: "🚪" },
+            { text: "洗手", icon: "🧼" },
+            { text: "老師", icon: "👩‍🏫" },
+            { text: "同學", icon: "🧑‍🤝‍🧑" },
+            { text: "休息", icon: "🛋️" }
+          ]
+        }
+      ]
+    };
+
+    // 狀態管理
+    const STORAGE_KEY = "SPECIAL_ED_AAC_DATA_V1";
+    let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_DATA;
+    let currentCategory = appData.categories[0].id;
+    let sentence = [];
+    let isEditMode = false;
+    let lastActionTime = 0; // 防連擊時間戳
+
+    // 儲存至 LocalStorage
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    // 防抖點擊檢查 (250ms)
+    function canProceed() {
+      const now = Date.now();
+      if (now - lastActionTime < 250) return false;
+      lastActionTime = now;
+      return true;
+    }
+
+    // 語音合成函式 (iPad/iOS 優先調適)
+    function speakText(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel(); // 停止上一段避免卡死
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "zh-TW";
+      utterance.rate = 0.9; // 略慢更清晰
+
+      // 篩選繁體中文語音
+      const voices = window.speechSynthesis.getVoices();
+      const twVoice = voices.find(v => v.lang.includes("zh-TW") || v.name.includes("Meijia") || v.name.includes("Sinji"));
+      if (twVoice) utterance.voice = twVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // 初始化語音（iOS Safari 需預先載入語音列表）
+    if (typeof speechSynthesis !== "undefined") {
+      speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    }
+
+    // 渲染語句條
+    function renderSentence() {
+      const strip = document.getElementById("sentenceStrip");
+      strip.innerHTML = "";
+      sentence.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "mini-card";
+        div.innerHTML = `<span class="mini-icon">${item.icon}</span><span>${item.text}</span>`;
+        strip.appendChild(div);
+      });
+      strip.scrollLeft = strip.scrollWidth;
+    }
+
+    // 渲染快速核心詞
+    function renderQuickCore() {
+      const coreBar = document.getElementById("quickCoreBar");
+      coreBar.innerHTML = "";
+      appData.core.forEach(item => {
+        const btn = document.createElement("button");
+        btn.className = "core-chip";
+        btn.innerHTML = `<span>${item.icon}</span><span>${item.text}</span>`;
+        btn.onclick = () => {
+          if (!canProceed()) return;
+          speakText(item.text);
+          sentence.push(item);
+          renderSentence();
+        };
+        coreBar.appendChild(btn);
+      });
+    }
+
+    // 渲染分類頁籤
+    function renderCategories() {
+      const catBar = document.getElementById("categoryBar");
+      catBar.innerHTML = "";
+      appData.categories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = `category-tab ${cat.id === currentCategory ? "active" : ""}`;
+        btn.textContent = `${cat.icon} ${cat.name}`;
+        btn.onclick = () => {
+          currentCategory = cat.id;
+          renderCategories();
+          renderCards();
+        };
+        catBar.appendChild(btn);
+      });
+    }
+
+    // 渲染卡片網格
+    function renderCards() {
+      const grid = document.getElementById("vocabGrid");
+      grid.innerHTML = "";
+      grid.className = `vocab-grid ${isEditMode ? "edit-mode" : ""}`;
+
+      const activeCat = appData.categories.find(c => c.id === currentCategory);
+      if (!activeCat) return;
+
+      activeCat.cards.forEach((card, index) => {
+        const cardEl = document.createElement("div");
+        cardEl.className = "card";
+        cardEl.innerHTML = `
+          <div class="card-remove-badge" data-index="${index}">✕</div>
+          <div class="icon">${card.icon}</div>
+          <div class="label">${card.text}</div>
+        `;
+
+        cardEl.onclick = (e) => {
+          // 編輯模式下的刪除處理
+          if (isEditMode && e.target.classList.contains("card-remove-badge")) {
+            e.stopPropagation();
+            activeCat.cards.splice(index, 1);
+            saveData();
+            renderCards();
+            return;
+          }
+
+          if (!canProceed()) return;
+          speakText(card.text);
+          sentence.push(card);
+          renderSentence();
+        };
+
+        grid.appendChild(cardEl);
+      });
+
+      // 編輯模式下顯示「新增卡片」格
+      const addEl = document.createElement("div");
+      addEl.className = "card add-card-placeholder";
+      addEl.innerHTML = `<div class="icon">➕</div><div class="label">新增卡片</div>`;
+      addEl.onclick = () => openAddModal();
+      grid.appendChild(addEl);
+    }
+
+    // 語句操作事件綁定
+    document.getElementById("btnSpeak").onclick = () => {
+      if (!canProceed() || sentence.length === 0) return;
+      const fullText = sentence.map(s => s.text).join(" ");
+      speakText(fullText);
+    };
+
+    document.getElementById("btnDelete").onclick = () => {
+      if (!canProceed() || sentence.length === 0) return;
+      sentence.pop();
+      renderSentence();
+    };
+
+    document.getElementById("btnClear").onclick = () => {
+      if (!canProceed() || sentence.length === 0) return;
+      sentence = [];
+      renderSentence();
+    };
+
+    // 管理模式切換
+    const toggleBtn = document.getElementById("btnToggleEdit");
+    toggleBtn.onclick = () => {
+      isEditMode = !isEditMode;
+      toggleBtn.textContent = isEditMode ? "完成" : "⚙️ 管理";
+      toggleBtn.style.backgroundColor = isEditMode ? "#16a34a" : "#475569";
+      renderCards();
+    };
+
+    // 新增 Modal 操作
+    const modal = document.getElementById("addModal");
+    function openAddModal() {
+      document.getElementById("inputEmoji").value = "";
+      document.getElementById("inputText").value = "";
+      modal.classList.add("open");
+    }
+
+    document.getElementById("modalCancel").onclick = () => modal.classList.remove("open");
+    document.getElementById("modalConfirm").onclick = () => {
+      const emoji = document.getElementById("inputEmoji").value.trim() || "💬";
+      const text = document.getElementById("inputText").value.trim();
+      if (!text) return;
+
+      const activeCat = appData.categories.find(c => c.id === currentCategory);
+      if (activeCat) {
+        activeCat.cards.push({ text, icon: emoji });
+        saveData();
+        renderCards();
+      }
+      modal.classList.remove("open");
+    };
+
+    // 初始化啟動
+    renderSentence();
+    renderQuickCore();
+    renderCategories();
+    renderCards();
+  </script>
+</body>
+</html>
